@@ -14,5 +14,5 @@ ser = serial.Serial(serial_dev, int(os.environ.get('SER_RATE', '9600')))
 time.sleep(2)
 
 # write color command
-ser.write(color)
+ser.write(color.encode('utf-8'))
 ser.flush()
