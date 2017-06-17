@@ -3,6 +3,7 @@ import sys
 
 from bibliopixel import LEDMatrix
 from bibliopixel.animation import MatrixChannelTest
+from BiblioPixelAnimations.matrix import (MatrixRain)
 from bibliopixel.drivers.driver_base import DriverBase, ChannelOrder
 from bibliopixel.drivers.visualizer import DriverVisualizer
 
@@ -28,6 +29,7 @@ class GlediatorSerialArduino(DriverBase):
             data (list): Pixel data in the format [R0, G0, B0, R1, G1, B1, ...]
         """
 
+        print "updating"
         # Glediator sends a first byte with a value of 1
         self.serial.write(1)
         # Then send all the pixel values
@@ -50,10 +52,10 @@ def main():
 
     led = LEDMatrix(driver)
 
-    anim = MatrixChannelTest(led)
+    anim = MatrixRain.MatrixRain(led)
 
     try:
-        anim.run()
+        anim.run(fps=10)
     except KeyboardInterrupt:
         # Ctrl+C will exit the animation and turn the LEDs offs
         led.all_off()
