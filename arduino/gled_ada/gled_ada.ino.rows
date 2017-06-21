@@ -1,0 +1,52 @@
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+  #include <avr/power.h>
+#endif
+
+#define NEOPIXEL_DATA_PIN   6
+#define NUM_ROWS            1
+#define NUM_PIXELS_ROW      21
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS_ROW * NUM_ROWS, NEOPIXEL_DATA_PIN, NEO_GRB + NEO_KHZ800);
+
+#define CMD_NEW_DATA 1
+
+byte leds[NUM_PIXELS_ROW * 3];
+
+void setup() {
+
+    // initialize all pixels to off
+    strip.begin();
+    strip.show();
+
+    Serial.begin(115200);
+}
+
+int serialGlediator () {
+    while (Serial.available() <= 0) {}
+    return Serial.read();
+}
+
+void loop() {
+    while (serialGlediator() != CMD_NEW_DATA) {}
+
+    for (int i = 0; i < NUM_ROWS; i++) {
+      Serial.readBytes((byte*)leds, NUM_PIXELS_ROW*3);
+      for (int j = 0; j < NUM_PIXELS_ROW; j++) {
+        strip.setPixelColor(NUM_ROWS*i+j, strip.Color(leds[j*3], leds[j*3+1], leds[j*3+2]));
+        /* strip.setPixelColor(i, strip.Color(0, 0, 50)); */
+      }
+    }
+    strip.show();
+}
+        /* Serial.write("hello red\n"); */
+        /* byte red = Serial.read(); */
+        /* byte red = serialGlediator(); */
+        /* Serial.write(red); */
+        /* Serial.write("hello green\n"); */
+        /* byte green = Serial.read(); */
+        /* byte green = serialGlediator(); */
+        /* Serial.write(green); */
+        /* Serial.write("hello blue\n"); */
+        /* byte blue = Serial.read(); */
+        /* byte blue = serialGlediator(); */
+        /* Serial.write(blue); */

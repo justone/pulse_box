@@ -1,0 +1,64 @@
+#include <Adafruit_NeoPixel.h>
+#ifdef __AVR__
+  #include <avr/power.h>
+#endif
+
+#define NEOPIXEL_DATA_PIN   6
+#define NUM_PIXELS          189
+#define NUM_PER_ROW         21
+Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, NEOPIXEL_DATA_PIN, NEO_GRB + NEO_KHZ800);
+
+#define CMD_NEW_DATA 1
+
+byte cmd[2];
+byte single[3];
+byte row[(NUM_PER_ROW-1)*3];
+
+void setup() {
+
+    // initialize all pixels to off
+    strip.begin();
+    strip.show();
+
+    Serial.begin(115200);
+}
+
+int serialGlediator () {
+    while (Serial.available() <= 0) {}
+    return Serial.read();
+}
+
+void loop() {
+    while (serialGlediator() != CMD_NEW_DATA) {}
+
+    Serial.readBytes((byte*)cmd, 2);
+    if (cmd[0] == 1) {
+      Serial.readBytes((byte*)single, 3);
+      strip.setPixelColor(cmd[1], strip.Color(single[0], single[1], single[2]));
+    }
+    if (cmd[0] == 2) {
+      Serial.readBytes((byte*)single, 3);
+      for (int i = 0; i < NUM_PER_ROW; i++) {
+        strip.setPixelColor(cmd[1]*NUM_PER_ROW + i, strip.Color(single[0], single[1], single[2]));
+      }
+    }
+    if (cmd[0] == 3) {
+      strip.setPixelColor(22, strip.Color(50, 0, 0));
+      strip.show();
+      while(Serial.available() < (NUM_PER_ROW-1)*3) {
+        strip.setPixelColor(Serial.available(), strip.Color(0, 50, 0));
+        strip.show();
+      }
+      strip.setPixelColor(23, strip.Color(50, 0, 0));
+      strip.show();
+
+      Serial.readBytes((byte*)row, (NUM_PER_ROW-1)*3);
+
+      strip.setPixelColor(cmd[1]*NUM_PER_ROW, strip.Color(cmd[2], cmd[3], cmd[4]));
+      for (int i = 1; i < NUM_PER_ROW; i++) {
+        strip.setPixelColor(cmd[1]*NUM_PER_ROW + i, strip.Color(row[i*3], row[i*3+1], row[i*3+2]));
+      }
+    }
+
+    strip.show();
+}
