@@ -27,11 +27,9 @@ func main() {
 		return
 	}
 
-	str, err := q.Receive()
-	if err != nil {
-		fmt.Println(err)
-		return
-	}
+	res := q.ReceiveChan()
 
-	fmt.Println(str)
+	for m := range res {
+		fmt.Println(m)
+	}
 }

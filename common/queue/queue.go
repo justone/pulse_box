@@ -111,3 +111,21 @@ func (q *SQSQueue) Receive() (string, error) {
 
 	return *output.Messages[0].Body, nil
 }
+
+func (q *SQSQueue) ReceiveChan() chan string {
+	results := make(chan string)
+
+	go func(res chan string) {
+		for {
+			str, err := q.Receive()
+			if err != nil && err != NoMessagesError {
+				logrus.Warnf("error received while receiving message: %s", err)
+				close(res)
+				return
+			}
+			res <- str
+		}
+	}(results)
+
+	return results
+}
