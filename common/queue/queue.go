@@ -17,6 +17,8 @@ type SQSQueue struct {
 }
 
 type Queue interface {
+	Send(interface{}) error
+	Receive() (string, error)
 }
 
 type SQSConfig struct {
