@@ -112,7 +112,7 @@ func (q *SQSQueue) Receive() (string, error) {
 	return *output.Messages[0].Body, nil
 }
 
-func (q *SQSQueue) ReceiveChan() chan string {
+func (q *SQSQueue) ReceiveChan() <-chan string {
 	results := make(chan string)
 
 	go func(res chan string) {
