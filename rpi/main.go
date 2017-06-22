@@ -6,60 +6,55 @@ import (
 	"io"
 	"log"
 	"math/rand"
+	"os"
 	"time"
 
 	"github.com/jacobsa/go-serial/serial"
 )
 
-func main() {
-	options := serial.OpenOptions{
-		PortName:        "/dev/tty.usbserial-A7007bpS",
-		BaudRate:        115200,
-		DataBits:        8,
-		StopBits:        1,
-		MinimumReadSize: 4,
+type Color uint8
+
+const (
+	colorRed = Color(iota)
+	colorGreen
+	colorBlue
+	colorPurple
+	colorYellow
+	colorOrange
+)
+
+var (
+	awsAccessKeyId     = getenv("AWS_ACCESS_KEY_ID")
+	awsSecretAccessKey = getenv("AWS_SECRET_ACCESS_KEY")
+	sqsQueueUrl        = getenv("SQS_QUEUE_URL")
+)
+
+func getenv(name string) string {
+	v := os.Getenv(name)
+	if v == "" {
+		panic("missing required environment variable " + name)
 	}
-
-	rand.Seed(time.Now().Unix())
-	// Open the port.
-	port, err := serial.Open(options)
-	if err != nil {
-		log.Fatalf("serial.Open: %v", err)
-	}
-
-	time.Sleep(2 * time.Second)
-
-	for {
-		randomLED(port)
-		// randomLEDFade(port)
-		// randomRow(port)
-	}
-
-	// b := []byte{}
-	// for i := 0; i < 21; i++ {
-	// 	b = append(b, 0x42, 0x0, 0x42)
-	// }
-	// paintRow(port, 0, b)
-	// time.Sleep(2 * time.Second)
+	return v
 }
 
-func paintRow(port io.ReadWriteCloser, row int, colors []byte) {
-
-	b := []byte{0x1, 0x3, byte(row)}
-	b = append(b, colors...)
-	sendSerial(port, b)
+type Board interface {
+	RandomLED(Color) error
 }
 
-func sendSerial(port io.ReadWriteCloser, data []byte) {
-	fmt.Println("Sending: ", hex.EncodeToString(data))
-	n, err := port.Write(data)
-	if err != nil {
-		log.Fatalf("port.Write: %v", err)
-	}
-	fmt.Println("Wrote", n, "bytes.")
+type RealBoard struct {
+	Port io.ReadWriteCloser
 }
 
-func randomLED(port io.ReadWriteCloser) {
+type FakeBoard struct{}
+
+func (rb *FakeBoard) RandomLED(color Color) error {
+	fmt.Println("turning on", color)
+	time.Sleep(200 * time.Millisecond)
+
+	return nil
+}
+
+func (rb *RealBoard) RandomLED(color Color) error {
 	rn := rand.Intn(105)
 
 	// brightness := rand.Intn(150)
@@ -67,7 +62,7 @@ func randomLED(port io.ReadWriteCloser) {
 
 	var red, green, blue int
 
-	switch color := rand.Intn(6); color {
+	switch color {
 	case 0:
 		red = brightness
 		green = 0
@@ -94,60 +89,49 @@ func randomLED(port io.ReadWriteCloser) {
 		blue = 0
 	}
 
-	sendSerial(port, []byte{0x1, 0x1, byte(rn), byte(red), byte(green), byte(blue)})
+	rb.sendSerial([]byte{0x1, 0x1, byte(rn), byte(red), byte(green), byte(blue)})
 	time.Sleep(200 * time.Millisecond)
-	// time.Sleep(1 * time.Second)
 
-	// sendSerial(port, []byte{0x1, 0x1, byte(rn), 0x0, 0x0, 0x0})
-	// time.Sleep(40 * time.Millisecond)
-	// // time.Sleep(1 * time.Second)
+	return nil
 }
 
-func randomLEDFade(port io.ReadWriteCloser) {
-	rn := rand.Intn(189)
-	red := rand.Intn(100)
-	green := rand.Intn(100)
-	blue := rand.Intn(100)
-
-	for i := 0; i <= 8; i++ {
-		sendSerial(port, []byte{
-			0x1,
-			0x1,
-			byte(rn),
-			byte((float64(i) / float64(8)) * float64(red)),
-			byte((float64(i) / float64(8)) * float64(green)),
-			byte((float64(i) / float64(8)) * float64(blue)),
-		})
-		time.Sleep(40 * time.Millisecond)
-		// time.Sleep(1 * time.Second)
+func (rb *RealBoard) sendSerial(data []byte) {
+	fmt.Println("Sending: ", hex.EncodeToString(data))
+	n, err := rb.Port.Write(data)
+	if err != nil {
+		log.Fatalf("port.Write: %v", err)
 	}
-
-	for i := 8; i >= 0; i-- {
-		sendSerial(port, []byte{
-			0x1,
-			0x1,
-			byte(rn),
-			byte((float64(i) / float64(8)) * float64(red)),
-			byte((float64(i) / float64(8)) * float64(green)),
-			byte((float64(i) / float64(8)) * float64(blue)),
-		})
-		time.Sleep(40 * time.Millisecond)
-		// time.Sleep(1 * time.Second)
-	}
-
-	// sendSerial(port, []byte{0x1, 0x1, byte(rn), 0x0, 0x0, 0x0})
-	// time.Sleep(40 * time.Millisecond)
-	// // time.Sleep(1 * time.Second)
+	fmt.Println("Wrote", n, "bytes.")
 }
 
-func randomRow(port io.ReadWriteCloser) {
-	for i := 0; i < 9; i++ {
-		sendSerial(port, []byte{0x1, 0x2, byte(i), 0x42, 0x0, 0x42})
-		time.Sleep(80 * time.Millisecond)
-		// time.Sleep(1 * time.Second)
+func main() {
 
-		sendSerial(port, []byte{0x1, 0x2, byte(i), 0x0, 0x0, 0x0})
-		time.Sleep(40 * time.Millisecond)
-		// time.Sleep(1 * time.Second)
+	var b Board
+	if pn := os.Getenv("SERIAL_PORT"); len(pn) > 0 {
+		options := serial.OpenOptions{
+			PortName:        "/dev/tty.usbserial-A7007bpS",
+			BaudRate:        115200,
+			DataBits:        8,
+			StopBits:        1,
+			MinimumReadSize: 4,
+		}
+
+		rand.Seed(time.Now().Unix())
+		// Open the port.
+		port, err := serial.Open(options)
+		if err != nil {
+			log.Fatalf("serial.Open: %v", err)
+		}
+
+		time.Sleep(2 * time.Second)
+		b = &RealBoard{port}
+	} else {
+		fmt.Println("No SERIAL_PORT env var found, not sending to real device")
+		b = &FakeBoard{}
+	}
+
+	for {
+		// TODO: replace with reading from sqs queue and then send to board
+		b.RandomLED(colorRed)
 	}
 }
