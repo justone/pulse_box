@@ -31,6 +31,7 @@ func main() {
 	anaconda.SetConsumerSecret(consumerSecret)
 	api := anaconda.NewTwitterApi(accessToken, accessTokenSecret)
 
+	logrus.SetLevel(logrus.DebugLevel)
 	log := &logger{logrus.New()}
 	api.SetLogger(log)
 
@@ -60,6 +61,8 @@ func main() {
 		err = q.Send(`{"command": "random_led_pulse", "color": "green"}`)
 		if err != nil {
 			log.Errorf("Error sending to queue: %v", err)
+		} else {
+			log.Infof(" --> Queued")
 		}
 	}
 }
