@@ -6,6 +6,7 @@ import (
 	"os"
 
 	"github.com/ChimeraCoder/anaconda"
+	"github.com/justone/pulse_box/common/queue"
 	"github.com/sirupsen/logrus"
 )
 
@@ -14,6 +15,7 @@ var (
 	consumerSecret    = getenv("TWITTER_CONSUMER_SECRET")
 	accessToken       = getenv("TWITTER_ACCESS_TOKEN")
 	accessTokenSecret = getenv("TWITTER_ACCESS_TOKEN_SECRET")
+	queueUrl          = getenv("PULSE_SQS_URL")
 )
 
 func getenv(name string) string {
@@ -32,6 +34,13 @@ func main() {
 	log := &logger{logrus.New()}
 	api.SetLogger(log)
 
+	q, err := queue.NewSQS(queue.SQSConfig{QueueUrl: queueUrl})
+
+	if err != nil {
+		log.Errorf("Error connecting to queue: %v", err)
+		os.Exit(1)
+	}
+
 	stream := api.PublicStreamFilter(url.Values{
 		"track": []string{"@mediatemple", "#mediatemple", "media temple", "Media Temple", "hackathon"},
 		// @mediatemple
@@ -48,6 +57,10 @@ func main() {
 		}
 
 		log.Infof("Tweet: %s", t.Text)
+		err = q.Send(`{"command": "random_led_pulse", "color": "green"}`)
+		if err != nil {
+			log.Errorf("Error sending to queue: %v", err)
+		}
 	}
 }
 
