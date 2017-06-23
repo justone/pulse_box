@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/hex"
+	"encoding/json"
+	"flag"
 	"fmt"
 	"io"
 	"log"
@@ -10,6 +12,8 @@ import (
 	"time"
 
 	"github.com/jacobsa/go-serial/serial"
+	"github.com/justone/pulse_box/common/queue"
+	"github.com/sirupsen/logrus"
 )
 
 type Color uint8
@@ -46,6 +50,11 @@ type RealBoard struct {
 }
 
 type FakeBoard struct{}
+
+type Command struct {
+	Command string `json:"command"`
+	Color   string `json:"color"`
+}
 
 func (rb *FakeBoard) RandomLED(color Color) error {
 	fmt.Println("turning on", color)
@@ -106,6 +115,23 @@ func (rb *RealBoard) sendSerial(data []byte) {
 
 func main() {
 
+	debug := flag.Bool("debug", false, "show debug output")
+	flag.Parse()
+
+	logrus.SetLevel(logrus.InfoLevel)
+	if *debug {
+		logrus.SetLevel(logrus.DebugLevel)
+	}
+	logrus.SetFormatter(&logrus.TextFormatter{FullTimestamp: true})
+
+	q, err := queue.NewSQS(queue.SQSConfig{
+		QueueUrl: sqsQueueUrl,
+	})
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+
 	var b Board
 	if pn := os.Getenv("SERIAL_PORT"); len(pn) > 0 {
 		options := serial.OpenOptions{
@@ -130,6 +156,35 @@ func main() {
 		b = &FakeBoard{}
 	}
 
+	res := q.ReceiveChan()
+
+	for m := range res {
+		fmt.Println(m)
+		var cmd Command
+		err := json.Unmarshal([]byte(m), &cmd)
+		if err != nil {
+			logrus.Infof("error unmarshalling data: %s (data: %s)", err, m)
+			continue
+		}
+
+		fmt.Println(cmd)
+		if cmd.Command == "random_led_pulse" {
+			switch cmd.Color {
+			case "red":
+				b.RandomLED(colorRed)
+			case "blue":
+				b.RandomLED(colorBlue)
+			case "green":
+				b.RandomLED(colorGreen)
+			case "purple":
+				b.RandomLED(colorPurple)
+			case "yellow":
+				b.RandomLED(colorYellow)
+			case "orange":
+				b.RandomLED(colorOrange)
+			}
+		}
+	}
 	for {
 		// TODO: replace with reading from sqs queue and then send to board
 		b.RandomLED(colorRed)
