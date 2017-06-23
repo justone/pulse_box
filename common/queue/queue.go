@@ -123,7 +123,9 @@ func (q *SQSQueue) ReceiveChan() <-chan string {
 				close(res)
 				return
 			}
-			res <- str
+			if len(str) > 0 {
+				res <- str
+			}
 		}
 	}(results)
 
