@@ -77,13 +77,50 @@ func NewRandomAllColorsFast() (*anim.StatefulAnimation, error) {
 	})
 }
 
+func NewStrandTest() (*anim.StatefulAnimation, error) {
+	return anim.NewStatefulAnimation(func(req, resp chan *anim.Grid) {
+		idx := 0
+		color := 0
+
+		for {
+			g := <-req
+
+			if len(g.LEDs) == idx {
+				color++
+				if color == 3 {
+					color = 0
+				}
+				for _, l := range g.LEDs {
+					l.R = 0
+					l.G = 0
+					l.B = 0
+				}
+
+				idx = 0
+			} else {
+				switch color {
+				case 0:
+					g.LEDs[idx].R = 250
+				case 1:
+					g.LEDs[idx].G = 250
+				case 2:
+					g.LEDs[idx].B = 250
+				}
+				idx++
+			}
+
+			resp <- g
+		}
+	})
+}
+
 func run(height, width int) error {
 	driver, err := anim.NewScreenDriver(height, width)
 	if err != nil {
 		return err
 	}
 
-	animation, err := NewRandomAllColorsFast()
+	animation, err := NewStrandTest()
 	if err != nil {
 		return err
 	}
