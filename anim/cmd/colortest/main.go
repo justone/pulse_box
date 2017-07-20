@@ -45,7 +45,7 @@ func run(height, width int) error {
 		return err
 	}
 
-	go driver.Render(animation)
+	driver.Start(animation)
 
 	<-driver.DoneChan()
 

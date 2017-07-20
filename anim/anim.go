@@ -23,7 +23,7 @@ type Animation interface {
 }
 
 type Driver interface {
-	Render(Animation)
+	Start(Animation)
 	DoneChan() chan bool
 }
 
@@ -124,7 +124,7 @@ func (sd *ScreenDriver) DoneChan() chan bool {
 	return sd.done
 }
 
-func (sd *ScreenDriver) Render(anim Animation) {
+func (sd *ScreenDriver) Start(anim Animation) {
 
 	out := anim.RequestChan()
 	in := anim.ResponseChan()
@@ -176,34 +176,36 @@ func (sd *ScreenDriver) Render(anim Animation) {
 		}
 	}(eventChan, done)
 
-	blackBase := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorBlack)
-	var new *Grid
-	for {
-		timeout := time.After(50 * time.Millisecond)
-		// timeout := time.After(1 * time.Second)
-		select {
-		case new = <-in:
-			// log.Println("received new frame")
-			// fmt.Println(new)
-		case <-timeout:
-			if new != nil {
-				// log.Println("showing frame")
-				for x := 0; x < new.width; x++ {
-					for y := 0; y < new.height; y++ {
-						l := new.leds[y*new.width+x]
-						c := blackBase.Foreground(tcell.NewRGBColor(l.r, l.g, l.b))
-						sd.screen.SetCell(x*2, y, c, '•')
+	go func() {
+		blackBase := tcell.StyleDefault.Background(tcell.ColorBlack).Foreground(tcell.ColorBlack)
+		var new *Grid
+		for {
+			timeout := time.After(50 * time.Millisecond)
+			// timeout := time.After(1 * time.Second)
+			select {
+			case new = <-in:
+				// log.Println("received new frame")
+				// fmt.Println(new)
+			case <-timeout:
+				if new != nil {
+					// log.Println("showing frame")
+					for x := 0; x < new.width; x++ {
+						for y := 0; y < new.height; y++ {
+							l := new.leds[y*new.width+x]
+							c := blackBase.Foreground(tcell.NewRGBColor(l.r, l.g, l.b))
+							sd.screen.SetCell(x*2, y, c, '•')
+						}
 					}
+					sd.screen.Show()
 				}
-				sd.screen.Show()
+				out <- new
+				new = nil
+			case <-done:
+				// clean up screen
+				sd.screen.Fini()
+				sd.done <- true
+				return
 			}
-			out <- new
-			new = nil
-		case <-done:
-			// clean up screen
-			sd.screen.Fini()
-			sd.done <- true
-			return
 		}
-	}
+	}()
 }
