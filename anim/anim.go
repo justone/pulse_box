@@ -48,7 +48,7 @@ func NewBaseAnimation() *BaseAnimation {
 }
 
 type RandomSinglePixel struct {
-	Animation
+	*BaseAnimation
 }
 
 func NewRandomSinglePixel() (*RandomSinglePixel, error) {
