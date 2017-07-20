@@ -2,7 +2,6 @@ package anim
 
 import (
 	"log"
-	"math/rand"
 	"time"
 
 	"github.com/gdamore/tcell"
@@ -45,59 +44,6 @@ func NewBaseAnimation() *BaseAnimation {
 		make(chan *Grid),
 		make(chan *Grid),
 	}
-}
-
-type RandomSinglePixel struct {
-	*BaseAnimation
-}
-
-func NewRandomSinglePixel() (*RandomSinglePixel, error) {
-
-	ba := NewBaseAnimation()
-
-	go func(req, resp chan *Grid) {
-		color := time.After(time.Duration(rand.Intn(50)) * time.Millisecond)
-		var pickLED bool
-		for {
-			select {
-			case g := <-req:
-				// log.Println("new frame requested")
-				// log.Println(g)
-				for _, l := range g.LEDs {
-					if l.R > 0 {
-						// log.Printf("  knocking down red on %d", i)
-						l.R = l.R - 10
-					}
-					if l.G > 0 {
-						// log.Printf("  knocking down green on %d", i)
-						l.G = l.G - 10
-					}
-					if l.B > 0 {
-						// log.Printf("  knocking down blue on %d", i)
-						l.B = l.B - 10
-					}
-				}
-				if pickLED {
-					switch rand.Intn(3) {
-					case 0:
-						g.LEDs[rand.Intn(len(g.LEDs))].R = 250
-					case 1:
-						g.LEDs[rand.Intn(len(g.LEDs))].B = 250
-					case 2:
-						g.LEDs[rand.Intn(len(g.LEDs))].G = 250
-					}
-					pickLED = false
-				}
-				// log.Println("sending frame")
-				resp <- g
-			case <-color:
-				pickLED = true
-				color = time.After(time.Duration(rand.Intn(50)) * time.Millisecond)
-			}
-		}
-	}(ba.RequestChan(), ba.ResponseChan())
-
-	return &RandomSinglePixel{ba}, nil
 }
 
 type StatefulAnimation struct {
