@@ -27,15 +27,33 @@ type Driver interface {
 	DoneChan() chan bool
 }
 
-type RandomSinglePixel struct {
+type BaseAnimation struct {
 	request  chan *Grid
 	response chan *Grid
 }
 
+func (ba *BaseAnimation) RequestChan() chan *Grid {
+	return ba.request
+}
+
+func (ba *BaseAnimation) ResponseChan() chan *Grid {
+	return ba.response
+}
+
+func NewBaseAnimation() *BaseAnimation {
+	return &BaseAnimation{
+		make(chan *Grid),
+		make(chan *Grid),
+	}
+}
+
+type RandomSinglePixel struct {
+	Animation
+}
+
 func NewRandomSinglePixel() (*RandomSinglePixel, error) {
 
-	req := make(chan *Grid)
-	res := make(chan *Grid)
+	ba := NewBaseAnimation()
 
 	go func(req, resp chan *Grid) {
 		color := time.After(time.Duration(rand.Intn(50)) * time.Millisecond)
@@ -71,23 +89,15 @@ func NewRandomSinglePixel() (*RandomSinglePixel, error) {
 					pickLED = false
 				}
 				// log.Println("sending frame")
-				res <- g
+				resp <- g
 			case <-color:
 				pickLED = true
 				color = time.After(time.Duration(rand.Intn(50)) * time.Millisecond)
 			}
 		}
-	}(req, res)
+	}(ba.RequestChan(), ba.ResponseChan())
 
-	return &RandomSinglePixel{req, res}, nil
-}
-
-func (rsp *RandomSinglePixel) RequestChan() chan *Grid {
-	return rsp.request
-}
-
-func (rsp *RandomSinglePixel) ResponseChan() chan *Grid {
-	return rsp.response
+	return &RandomSinglePixel{ba}, nil
 }
 
 type ScreenDriver struct {
