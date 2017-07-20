@@ -5,6 +5,8 @@ import (
 	"time"
 )
 
+type NewAnimFunc func() (Animation, error)
+
 type RandomSinglePixel struct {
 	*BaseAnimation
 }

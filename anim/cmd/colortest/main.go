@@ -12,7 +12,7 @@ import (
 )
 
 func main() {
-	animations := map[string]func() (anim.Animation, error){
+	animations := map[string]anim.NewAnimFunc{
 		"random_single":        anim.NewRandomSinglePixel,
 		"random_fill":          anim.NewRandomFill,
 		"random_fill_all_fast": anim.NewRandomAllColorsFast,
@@ -55,7 +55,7 @@ func main() {
 	}
 }
 
-func run(height, width int, anim_func func() (anim.Animation, error)) error {
+func run(height, width int, anim_func anim.NewAnimFunc) error {
 	driver, err := anim.NewScreenDriver(height, width)
 	if err != nil {
 		return err
