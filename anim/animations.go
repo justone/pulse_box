@@ -9,7 +9,7 @@ type RandomSinglePixel struct {
 	*BaseAnimation
 }
 
-func NewRandomSinglePixel() (*RandomSinglePixel, error) {
+func NewRandomSinglePixel() (Animation, error) {
 
 	ba := NewBaseAnimation()
 
@@ -58,7 +58,7 @@ func NewRandomSinglePixel() (*RandomSinglePixel, error) {
 	return &RandomSinglePixel{ba}, nil
 }
 
-func NewRandomFill() (*StatefulAnimation, error) {
+func NewRandomFill() (Animation, error) {
 	return NewStatefulAnimation(func(req, resp chan *Grid) {
 		var ids []int
 		idx := 0
@@ -88,7 +88,7 @@ func NewRandomFill() (*StatefulAnimation, error) {
 	})
 }
 
-func NewRandomAllColorsFast() (*StatefulAnimation, error) {
+func NewRandomAllColorsFast() (Animation, error) {
 
 	return NewStatelessAnimation(func(g *Grid) *Grid {
 		for i := 0; i < len(g.LEDs)/3; i++ {
@@ -101,7 +101,7 @@ func NewRandomAllColorsFast() (*StatefulAnimation, error) {
 	})
 }
 
-func NewStrandTest() (*StatefulAnimation, error) {
+func NewStrandTest() (Animation, error) {
 	return NewStatefulAnimation(func(req, resp chan *Grid) {
 		idx := 0
 		color := 0
