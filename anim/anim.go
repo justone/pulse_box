@@ -100,6 +100,19 @@ func NewRandomSinglePixel() (*RandomSinglePixel, error) {
 	return &RandomSinglePixel{ba}, nil
 }
 
+type StatefulAnimation struct {
+	*BaseAnimation
+}
+
+func NewStatefulAnimation(f func(chan *Grid, chan *Grid)) (*StatefulAnimation, error) {
+
+	ba := NewBaseAnimation()
+
+	go f(ba.RequestChan(), ba.ResponseChan())
+
+	return &StatefulAnimation{ba}, nil
+}
+
 type ScreenDriver struct {
 	screen        tcell.Screen
 	done          chan bool

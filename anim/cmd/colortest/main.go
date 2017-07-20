@@ -34,15 +34,8 @@ func main() {
 	}
 }
 
-type RandomFill struct {
-	*anim.BaseAnimation
-}
-
-func NewRandomFill() (*RandomFill, error) {
-
-	ba := anim.NewBaseAnimation()
-
-	go func(req, resp chan *anim.Grid) {
+func NewRandomFill() (*anim.StatefulAnimation, error) {
+	return anim.NewStatefulAnimation(func(req, resp chan *anim.Grid) {
 		var ids []int
 		idx := 0
 		on := true
@@ -68,9 +61,7 @@ func NewRandomFill() (*RandomFill, error) {
 
 			resp <- g
 		}
-	}(ba.RequestChan(), ba.ResponseChan())
-
-	return &RandomFill{ba}, nil
+	})
 }
 
 func run(height, width int) error {
