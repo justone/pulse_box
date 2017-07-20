@@ -8,7 +8,7 @@ import (
 	"os"
 	"time"
 
-	"github.com/justone/pulse_box/colortest"
+	"github.com/justone/pulse_box/anim"
 )
 
 func main() {
