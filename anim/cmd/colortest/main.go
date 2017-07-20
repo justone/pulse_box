@@ -34,13 +34,52 @@ func main() {
 	}
 }
 
+type RandomFill struct {
+	*anim.BaseAnimation
+}
+
+func NewRandomFill() (*RandomFill, error) {
+
+	ba := anim.NewBaseAnimation()
+
+	go func(req, resp chan *anim.Grid) {
+		var ids []int
+		idx := 0
+		on := true
+
+		for {
+			g := <-req
+
+			if len(ids) == 0 {
+				ids = rand.Perm(len(g.LEDs))
+			}
+
+			if len(g.LEDs) == idx {
+				idx = 0
+				on = !on
+			} else {
+				if on {
+					g.LEDs[ids[idx]].R = 250
+				} else {
+					g.LEDs[ids[idx]].R = 0
+				}
+				idx++
+			}
+
+			resp <- g
+		}
+	}(ba.RequestChan(), ba.ResponseChan())
+
+	return &RandomFill{ba}, nil
+}
+
 func run(height, width int) error {
 	driver, err := anim.NewScreenDriver(height, width)
 	if err != nil {
 		return err
 	}
 
-	animation, err := anim.NewRandomSinglePixel()
+	animation, err := NewRandomFill()
 	if err != nil {
 		return err
 	}

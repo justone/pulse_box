@@ -9,11 +9,11 @@ import (
 )
 
 type led struct {
-	r, g, b int32
+	R, G, B int32
 }
 
 type Grid struct {
-	leds          []*led
+	LEDs          []*led
 	height, width int
 }
 
@@ -63,28 +63,28 @@ func NewRandomSinglePixel() (*RandomSinglePixel, error) {
 			case g := <-req:
 				// log.Println("new frame requested")
 				// log.Println(g)
-				for _, l := range g.leds {
-					if l.r > 0 {
+				for _, l := range g.LEDs {
+					if l.R > 0 {
 						// log.Printf("  knocking down red on %d", i)
-						l.r = l.r - 10
+						l.R = l.R - 10
 					}
-					if l.g > 0 {
+					if l.G > 0 {
 						// log.Printf("  knocking down green on %d", i)
-						l.g = l.g - 10
+						l.G = l.G - 10
 					}
-					if l.b > 0 {
+					if l.B > 0 {
 						// log.Printf("  knocking down blue on %d", i)
-						l.b = l.b - 10
+						l.B = l.B - 10
 					}
 				}
 				if pickLED {
 					switch rand.Intn(3) {
 					case 0:
-						g.leds[rand.Intn(len(g.leds))].r = 250
+						g.LEDs[rand.Intn(len(g.LEDs))].R = 250
 					case 1:
-						g.leds[rand.Intn(len(g.leds))].b = 250
+						g.LEDs[rand.Intn(len(g.LEDs))].B = 250
 					case 2:
-						g.leds[rand.Intn(len(g.leds))].g = 250
+						g.LEDs[rand.Intn(len(g.LEDs))].G = 250
 					}
 					pickLED = false
 				}
@@ -139,12 +139,12 @@ func (sd *ScreenDriver) Start(anim Animation) {
 	out := anim.RequestChan()
 	in := anim.ResponseChan()
 
-	var leds []*led
+	var LEDs []*led
 	log.Println("led count:", sd.height*sd.width)
 	for i := 0; i <= sd.height*sd.width; i++ {
-		leds = append(leds, &led{})
+		LEDs = append(LEDs, &led{})
 	}
-	grid1 := &Grid{leds, sd.height, sd.width}
+	grid1 := &Grid{LEDs, sd.height, sd.width}
 
 	out <- grid1
 
@@ -201,8 +201,8 @@ func (sd *ScreenDriver) Start(anim Animation) {
 					// log.Println("showing frame")
 					for x := 0; x < new.width; x++ {
 						for y := 0; y < new.height; y++ {
-							l := new.leds[y*new.width+x]
-							c := blackBase.Foreground(tcell.NewRGBColor(l.r, l.g, l.b))
+							l := new.LEDs[y*new.width+x]
+							c := blackBase.Foreground(tcell.NewRGBColor(l.R, l.G, l.B))
 							sd.screen.SetCell(x*2, y, c, '•')
 						}
 					}
