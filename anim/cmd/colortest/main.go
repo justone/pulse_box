@@ -64,16 +64,26 @@ func NewRandomFill() (*anim.StatefulAnimation, error) {
 	})
 }
 
+func NewRandomAllColorsFast() (*anim.StatefulAnimation, error) {
+
+	return anim.NewStatelessAnimation(func(g *anim.Grid) *anim.Grid {
+		for i := 0; i < len(g.LEDs)/3; i++ {
+			g.LEDs[rand.Intn(len(g.LEDs))].R = int32(rand.Intn(250))
+			g.LEDs[rand.Intn(len(g.LEDs))].G = int32(rand.Intn(250))
+			g.LEDs[rand.Intn(len(g.LEDs))].B = int32(rand.Intn(250))
+		}
+
+		return g
+	})
+}
+
 func run(height, width int) error {
 	driver, err := anim.NewScreenDriver(height, width)
 	if err != nil {
 		return err
 	}
 
-	animation, err := anim.NewStatelessAnimation(func(g *anim.Grid) *anim.Grid {
-		g.LEDs[rand.Intn(len(g.LEDs))].B = 250
-		return g
-	})
+	animation, err := NewRandomAllColorsFast()
 	if err != nil {
 		return err
 	}
