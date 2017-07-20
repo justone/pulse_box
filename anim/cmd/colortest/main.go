@@ -17,6 +17,7 @@ func main() {
 		"random_fill":          anim.NewRandomFill,
 		"random_fill_all_fast": anim.NewRandomAllColorsFast,
 		"strand_test":          anim.NewStrandTest,
+		"pulse_all":            anim.NewPulseAll,
 	}
 
 	height := flag.Int("height", 10, "height of the LED grid")

@@ -139,3 +139,34 @@ func NewStrandTest() (Animation, error) {
 		}
 	})
 }
+
+func NewPulseAll() (Animation, error) {
+	return NewStatefulAnimation(func(req, resp chan *Grid) {
+		steps := 20
+		current := 1
+		max := 240
+		up := true
+
+		for {
+			g := <-req
+
+			if (up && current == steps) || (!up && current == 1) {
+				up = !up
+			}
+
+			for _, l := range g.LEDs {
+				l.R = int32(max * current / steps)
+				l.G = 0
+				l.B = 0
+			}
+
+			if up {
+				current++
+			} else {
+				current--
+			}
+
+			resp <- g
+		}
+	})
+}
