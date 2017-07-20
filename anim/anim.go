@@ -113,6 +113,15 @@ func NewStatefulAnimation(f func(chan *Grid, chan *Grid)) (*StatefulAnimation, e
 	return &StatefulAnimation{ba}, nil
 }
 
+func NewStatelessAnimation(f func(*Grid) *Grid) (*StatefulAnimation, error) {
+
+	return NewStatefulAnimation(func(req, resp chan *Grid) {
+		for {
+			resp <- f(<-req)
+		}
+	})
+}
+
 type ScreenDriver struct {
 	screen        tcell.Screen
 	done          chan bool

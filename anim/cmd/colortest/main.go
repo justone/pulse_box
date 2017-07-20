@@ -70,7 +70,10 @@ func run(height, width int) error {
 		return err
 	}
 
-	animation, err := NewRandomFill()
+	animation, err := anim.NewStatelessAnimation(func(g *anim.Grid) *anim.Grid {
+		g.LEDs[rand.Intn(len(g.LEDs))].B = 250
+		return g
+	})
 	if err != nil {
 		return err
 	}
