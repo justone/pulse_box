@@ -13,7 +13,27 @@ type led struct {
 
 type Grid struct {
 	LEDs          []*led
+	LEDs2D        [][]*led
 	height, width int
+}
+
+func NewGrid(height, width int) *Grid {
+	var LEDs []*led
+	LEDs2D := make([][]*led, height)
+	for i := range LEDs2D {
+		LEDs2D[i] = make([]*led, width)
+	}
+
+	log.Println("led count:", height*width)
+	for h := 0; h < height; h++ {
+		for w := 0; w < width; w++ {
+			new := &led{}
+			LEDs = append(LEDs, new)
+			LEDs2D[h][w] = new
+		}
+	}
+
+	return &Grid{LEDs, LEDs2D, height, width}
 }
 
 type Animation interface {
@@ -107,14 +127,7 @@ func (sd *ScreenDriver) Start(anim Animation) {
 	out := anim.RequestChan()
 	in := anim.ResponseChan()
 
-	var LEDs []*led
-	log.Println("led count:", sd.height*sd.width)
-	for i := 0; i <= sd.height*sd.width; i++ {
-		LEDs = append(LEDs, &led{})
-	}
-	grid1 := &Grid{LEDs, sd.height, sd.width}
-
-	out <- grid1
+	out <- NewGrid(sd.height, sd.width)
 
 	eventChan := make(chan tcell.Event)
 	go func(screen tcell.Screen, e chan tcell.Event) {
