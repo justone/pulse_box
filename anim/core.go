@@ -11,6 +11,12 @@ type led struct {
 	R, G, B int32
 }
 
+func (l *led) SetAll(v int32) {
+	l.R = v
+	l.G = v
+	l.B = v
+}
+
 type Grid struct {
 	LEDs          []*led
 	LEDs2D        [][]*led

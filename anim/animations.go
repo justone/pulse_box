@@ -170,3 +170,78 @@ func NewPulseAll() (Animation, error) {
 		}
 	})
 }
+
+type repeater struct {
+	cur, maxSteps, max int
+	dir                bool // true mean up
+}
+
+func (rep *repeater) Next() int {
+	ret := rep.cur
+
+	if rep.dir {
+		if rep.cur == rep.maxSteps-1 {
+			rep.cur = 0
+		} else {
+			rep.cur++
+		}
+	} else {
+		if rep.cur == 0 {
+			rep.cur = rep.maxSteps - 1
+		} else {
+			rep.cur--
+		}
+	}
+
+	return int((float32(ret) / float32(rep.maxSteps-1)) * float32(rep.max))
+}
+
+func (rep *repeater) Next32() int32 {
+	return int32(rep.Next())
+}
+
+func NewTheaterCrawl() (Animation, error) {
+	return NewStatefulAnimation(func(req, resp chan *Grid) {
+		max := 4
+		start := max
+		skips := 0
+
+		for {
+			g := <-req
+			skips++
+			if skips == 2 {
+				rep := &repeater{start, max, 250, true}
+
+				// go around the edge
+
+				// first, across the top
+				for i := range g.LEDs2D[0] {
+					g.LEDs2D[0][i].SetAll(rep.Next32())
+				}
+
+				// then, down the right side
+				for i := 1; i < len(g.LEDs2D)-1; i++ {
+					g.LEDs2D[i][len(g.LEDs2D[i])-1].SetAll(rep.Next32())
+				}
+
+				// then, the other way across the bottom
+				last := len(g.LEDs2D) - 1
+				for i := len(g.LEDs2D[last]) - 1; i >= 0; i-- {
+					g.LEDs2D[last][i].SetAll(rep.Next32())
+				}
+
+				// finally, up the left side
+				for i := len(g.LEDs2D) - 2; i > 0; i-- {
+					g.LEDs2D[i][0].SetAll(rep.Next32())
+				}
+
+				start--
+				if start < 0 {
+					start = max
+				}
+				skips = 0
+			}
+			resp <- g
+		}
+	})
+}
