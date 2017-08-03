@@ -68,6 +68,16 @@ func run(height, width int, anim_func anim.NewAnimFunc) error {
 		return err
 	}
 
+	// override animation with a composite for now
+	animation, _ = anim.NewCompositeAnimation(
+		anim.NewHorizontalStripes,
+		[]anim.ComponentAnimationArg{
+			{1, 1, 3, 9, anim.NewRandomSinglePixel},
+			{1 + 9 + 1, 1, 3, 9, anim.NewStrandTest},
+			{1, 1 + 3 + 1, 3, 9, anim.NewPulseAll},
+			{1 + 9 + 1, 1 + 3 + 1, 3, 9, anim.NewRandomFill},
+		})
+
 	driver.Start(animation)
 
 	<-driver.DoneChan()

@@ -103,6 +103,25 @@ func NewRandomAllColorsFast() (Animation, error) {
 	})
 }
 
+func NewHorizontalStripes() (Animation, error) {
+
+	return NewStatelessAnimation(func(g *Grid) *Grid {
+		for i := range g.LEDs2D {
+			for j := range g.LEDs2D[i] {
+				switch j % 3 {
+				case 0:
+					g.LEDs2D[i][j].R = 250
+				case 1:
+					g.LEDs2D[i][j].G = 250
+				case 2:
+					g.LEDs2D[i][j].B = 250
+				}
+			}
+		}
+		return g
+	})
+}
+
 func NewStrandTest() (Animation, error) {
 	return NewStatefulAnimation(func(req, resp chan *Grid) {
 		idx := 0
@@ -242,6 +261,72 @@ func NewTheaterCrawl() (Animation, error) {
 				skips = 0
 			}
 			resp <- g
+		}
+	})
+}
+
+type ComponentAnimationArg struct {
+	X, Y, Height, Width int
+	Func                NewAnimFunc
+}
+
+type componentAnimation struct {
+	X, Y, Height, Width int
+	Grid                *Grid
+	Animation           Animation
+}
+
+func NewCompositeAnimation(bg NewAnimFunc, others []ComponentAnimationArg) (Animation, error) {
+	bgAnim, err := bg()
+	if err != nil {
+		return nil, err
+	}
+
+	var subAnimations []*componentAnimation
+	for _, ca := range others {
+
+		ani, err := ca.Func()
+		if err != nil {
+			return nil, err
+		}
+
+		grid := NewGrid(ca.Height, ca.Width)
+		subAnimations = append(subAnimations, &componentAnimation{
+			ca.X, ca.Y, ca.Height, ca.Width, grid, ani,
+		})
+	}
+
+	return NewStatefulAnimation(func(req, resp chan *Grid) {
+
+		for {
+			// request background frame
+			bgAnim.RequestChan() <- <-req
+
+			// request sub-frames
+			for _, ca := range subAnimations {
+				ca.Animation.RequestChan() <- ca.Grid
+			}
+
+			// receive background frame
+			new := <-bgAnim.ResponseChan()
+
+			// for each subanimation, receive the frame and draw it over the
+			// background
+			for _, ca := range subAnimations {
+				subNew := <-ca.Animation.ResponseChan()
+
+				// copy subNew's grid over the appropriate section of new
+				for y := range subNew.LEDs2D {
+					for x := range subNew.LEDs2D[y] {
+						new.LEDs2D[y+ca.Y][x+ca.X].R = subNew.LEDs2D[y][x].R
+						new.LEDs2D[y+ca.Y][x+ca.X].G = subNew.LEDs2D[y][x].G
+						new.LEDs2D[y+ca.Y][x+ca.X].B = subNew.LEDs2D[y][x].B
+					}
+				}
+			}
+
+			// send the completed frame on to be drawn
+			resp <- new
 		}
 	})
 }
