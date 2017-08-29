@@ -2,7 +2,7 @@
 #define NUM_LEDS 189
 #define DATA_PIN 6
 #define CMD_NEW_DATA 1
-#define BAUD_RATE 1000000
+#define BAUD_RATE 256000
 
 CRGB leds[NUM_LEDS];
 

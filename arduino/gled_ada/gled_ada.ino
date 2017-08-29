@@ -4,7 +4,7 @@
 #endif
 
 #define NEOPIXEL_DATA_PIN   6
-#define NUM_PIXELS          105
+#define NUM_PIXELS          189
 Adafruit_NeoPixel strip = Adafruit_NeoPixel(NUM_PIXELS, NEOPIXEL_DATA_PIN, NEO_GRB + NEO_KHZ800);
 
 #define CMD_NEW_DATA 1
