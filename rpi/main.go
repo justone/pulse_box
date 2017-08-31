@@ -2,7 +2,6 @@ package main
 
 import (
 	"encoding/hex"
-	"encoding/json"
 	"flag"
 	"fmt"
 	"io"
@@ -43,6 +42,7 @@ func getenv(name string) string {
 
 type Board interface {
 	RandomLED(Color) error
+	SendSerial([]byte)
 }
 
 type RealBoard struct {
@@ -64,7 +64,7 @@ func (rb *FakeBoard) RandomLED(color Color) error {
 }
 
 func (rb *RealBoard) RandomLED(color Color) error {
-	rn := rand.Intn(105)
+	rn := rand.Intn(189)
 
 	// brightness := rand.Intn(150)
 	brightness := 200
@@ -98,13 +98,17 @@ func (rb *RealBoard) RandomLED(color Color) error {
 		blue = 0
 	}
 
-	rb.sendSerial([]byte{0x1, 0x1, byte(rn), byte(red), byte(green), byte(blue)})
+	rb.SendSerial([]byte{0x1, 0x1, byte(rn), byte(red), byte(green), byte(blue)})
 	time.Sleep(200 * time.Millisecond)
 
 	return nil
 }
 
-func (rb *RealBoard) sendSerial(data []byte) {
+func (rb *FakeBoard) SendSerial(data []byte) {
+
+}
+
+func (rb *RealBoard) SendSerial(data []byte) {
 	fmt.Println("Sending: ", hex.EncodeToString(data))
 	n, err := rb.Port.Write(data)
 	if err != nil {
@@ -135,8 +139,8 @@ func main() {
 	var b Board
 	if pn := os.Getenv("SERIAL_PORT"); len(pn) > 0 {
 		options := serial.OpenOptions{
-			PortName:        "/dev/tty.usbserial-A7007bpS",
-			BaudRate:        115200,
+			PortName:        pn,
+			BaudRate:        256000,
 			DataBits:        8,
 			StopBits:        1,
 			MinimumReadSize: 4,
@@ -149,44 +153,69 @@ func main() {
 			log.Fatalf("serial.Open: %v", err)
 		}
 
-		time.Sleep(2 * time.Second)
+		time.Sleep(5 * time.Second)
 		b = &RealBoard{port}
 	} else {
 		fmt.Println("No SERIAL_PORT env var found, not sending to real device")
 		b = &FakeBoard{}
 	}
 
-	res := q.ReceiveChan()
+	_ = q
+	// res := q.ReceiveChan()
 
-	for m := range res {
-		fmt.Println(m)
-		var cmd Command
-		err := json.Unmarshal([]byte(m), &cmd)
-		if err != nil {
-			logrus.Infof("error unmarshalling data: %s (data: %s)", err, m)
-			continue
-		}
+	// for m := range res {
+	// 	fmt.Println(m)
+	// 	var cmd Command
+	// 	err := json.Unmarshal([]byte(m), &cmd)
+	// 	if err != nil {
+	// 		logrus.Infof("error unmarshalling data: %s (data: %s)", err, m)
+	// 		continue
+	// 	}
 
-		fmt.Println(cmd)
-		if cmd.Command == "random_led_pulse" {
-			switch cmd.Color {
-			case "red":
-				b.RandomLED(colorRed)
-			case "blue":
-				b.RandomLED(colorBlue)
-			case "green":
-				b.RandomLED(colorGreen)
-			case "purple":
-				b.RandomLED(colorPurple)
-			case "yellow":
-				b.RandomLED(colorYellow)
-			case "orange":
-				b.RandomLED(colorOrange)
-			}
-		}
-	}
+	// 	fmt.Println(cmd)
+	// 	if cmd.Command == "random_led_pulse" {
+	// 		switch cmd.Color {
+	// 		case "red":
+	// 			b.RandomLED(colorRed)
+	// 		case "blue":
+	// 			b.RandomLED(colorBlue)
+	// 		case "green":
+	// 			b.RandomLED(colorGreen)
+	// 		case "purple":
+	// 			b.RandomLED(colorPurple)
+	// 		case "yellow":
+	// 			b.RandomLED(colorYellow)
+	// 		case "orange":
+	// 			b.RandomLED(colorOrange)
+	// 		}
+	// 	}
+	// }
+	// for {
+	// 	// TODO: replace with reading from sqs queue and then send to board
+	// 	b.RandomLED(colorRed)
+	// }
+
 	for {
-		// TODO: replace with reading from sqs queue and then send to board
-		b.RandomLED(colorRed)
+		for i := 0; i < 20; i = i + 1 {
+			fmt.Println(i)
+			data := []byte{0x1}
+			for j := 0; j < 189; j++ {
+				data = append(data, byte(i), 0x0, byte(i))
+			}
+
+			b.SendSerial(data)
+			time.Sleep(40 * time.Millisecond)
+		}
+
+		for i := 20; i > 0; i = i - 1 {
+			fmt.Println(i)
+			data := []byte{0x1}
+			for j := 0; j < 189; j++ {
+				data = append(data, byte(i), 0x0, byte(i))
+			}
+
+			b.SendSerial(data)
+			time.Sleep(40 * time.Millisecond)
+		}
 	}
 }

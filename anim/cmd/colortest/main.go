@@ -19,6 +19,7 @@ func main() {
 		"strand_test":          anim.NewStrandTest,
 		"pulse_all":            anim.NewPulseAll,
 		"theater":              anim.NewTheaterCrawl,
+		"white":                anim.NewAllWhite,
 	}
 
 	height := flag.Int("height", 10, "height of the LED grid")
@@ -58,7 +59,9 @@ func main() {
 }
 
 func run(height, width int, anim_func anim.NewAnimFunc) error {
+
 	driver, err := anim.NewScreenDriver(height, width)
+	// driver, err := anim.NewBoxDriver(height, width, os.Getenv("SERIAL_PORT"))
 	if err != nil {
 		return err
 	}
@@ -68,15 +71,16 @@ func run(height, width int, anim_func anim.NewAnimFunc) error {
 		return err
 	}
 
-	// override animation with a composite for now
-	animation, _ = anim.NewCompositeAnimation(
-		anim.NewHorizontalStripes,
-		[]anim.ComponentAnimationArg{
-			{1, 1, 3, 9, anim.NewRandomSinglePixel},
-			{1 + 9 + 1, 1, 3, 9, anim.NewStrandTest},
-			{1, 1 + 3 + 1, 3, 9, anim.NewPulseAll},
-			{1 + 9 + 1, 1 + 3 + 1, 3, 9, anim.NewRandomFill},
-		})
+	// // override animation with a composite for now
+	// animation, _ = anim.NewCompositeAnimation(
+	// 	anim.NewAllWhite,
+	// 	[]anim.ComponentAnimationArg{
+	// 		{1, 1, 3, 9, anim.NewRandomSinglePixel},
+	// 		{1 + 9 + 1, 1, 3, 9, anim.NewStrandTest},
+	// 		// {1, 1 + 3 + 1, 3, 9, anim.NewPulseAll},
+	// 		{1, 1 + 3 + 1, 3, 9, anim.NewRandomAllColorsFast},
+	// 		{1 + 9 + 1, 1 + 3 + 1, 3, 9, anim.NewRandomFill},
+	// 	})
 
 	driver.Start(animation)
 

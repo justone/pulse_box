@@ -1,10 +1,14 @@
 package anim
 
 import (
+	"encoding/hex"
+	"fmt"
+	"io"
 	"log"
 	"time"
 
 	"github.com/gdamore/tcell"
+	"github.com/jacobsa/go-serial/serial"
 )
 
 type led struct {
@@ -202,6 +206,91 @@ func (sd *ScreenDriver) Start(anim Animation) {
 				sd.screen.Fini()
 				sd.done <- true
 				return
+			}
+		}
+	}()
+}
+
+type BoxDriver struct {
+	port          io.ReadWriteCloser
+	done          chan bool
+	height, width int
+}
+
+func NewBoxDriver(height, width int, serial_port string) (*BoxDriver, error) {
+	options := serial.OpenOptions{
+		PortName:        serial_port,
+		BaudRate:        256000,
+		DataBits:        8,
+		StopBits:        1,
+		MinimumReadSize: 4,
+	}
+
+	// Open the port.
+	port, err := serial.Open(options)
+	if err != nil {
+		log.Fatalf("serial.Open: %v", err)
+	}
+
+	time.Sleep(2 * time.Second)
+
+	return &BoxDriver{
+		port,
+		make(chan bool),
+		height,
+		width,
+	}, nil
+}
+
+func (bd *BoxDriver) DoneChan() chan bool {
+	return bd.done
+}
+
+func (bd *BoxDriver) Start(anim Animation) {
+	out := anim.RequestChan()
+	in := anim.ResponseChan()
+
+	out <- NewGrid(bd.height, bd.width)
+
+	go func() {
+		var new *Grid
+		for {
+			timeout := time.After(50 * time.Millisecond)
+			// timeout := time.After(1 * time.Second)
+			select {
+			case new = <-in:
+				// log.Println("received new frame")
+				// fmt.Println(new)
+			case <-timeout:
+				if new != nil {
+					// log.Println("showing frame")
+					data := []byte{0x1}
+
+					out := true
+					for y := 0; y < new.height; y++ {
+						if out {
+							for x := 0; x < new.width; x++ {
+								l := new.LEDs2D[y][x]
+								data = append(data, byte(l.R), byte(l.G), byte(l.B))
+							}
+						} else {
+							for x := new.width - 1; x >= 0; x-- {
+								l := new.LEDs2D[y][x]
+								data = append(data, byte(l.R), byte(l.G), byte(l.B))
+							}
+						}
+						out = !out
+					}
+
+					fmt.Println("Sending: ", hex.EncodeToString(data))
+					n, err := bd.port.Write(data)
+					if err != nil {
+						log.Fatalf("port.Write: %v", err)
+					}
+					fmt.Println("Wrote", n, "bytes.")
+				}
+				out <- new
+				new = nil
 			}
 		}
 	}()

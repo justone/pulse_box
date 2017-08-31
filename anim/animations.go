@@ -16,7 +16,8 @@ func NewRandomSinglePixel() (Animation, error) {
 	ba := NewBaseAnimation()
 
 	go func(req, resp chan *Grid) {
-		color := time.After(time.Duration(rand.Intn(50)) * time.Millisecond)
+		delay := 400
+		color := time.After(time.Duration(rand.Intn(delay)) * time.Millisecond)
 		var pickLED bool
 		for {
 			select {
@@ -26,25 +27,25 @@ func NewRandomSinglePixel() (Animation, error) {
 				for _, l := range g.LEDs {
 					if l.R > 0 {
 						// log.Printf("  knocking down red on %d", i)
-						l.R = l.R - 10
+						l.R = l.R - 2
 					}
 					if l.G > 0 {
 						// log.Printf("  knocking down green on %d", i)
-						l.G = l.G - 10
+						l.G = l.G - 2
 					}
 					if l.B > 0 {
 						// log.Printf("  knocking down blue on %d", i)
-						l.B = l.B - 10
+						l.B = l.B - 2
 					}
 				}
 				if pickLED {
 					switch rand.Intn(3) {
 					case 0:
-						g.LEDs[rand.Intn(len(g.LEDs))].R = 250
+						g.LEDs[rand.Intn(len(g.LEDs))].R = 50
 					case 1:
-						g.LEDs[rand.Intn(len(g.LEDs))].B = 250
+						g.LEDs[rand.Intn(len(g.LEDs))].B = 50
 					case 2:
-						g.LEDs[rand.Intn(len(g.LEDs))].G = 250
+						g.LEDs[rand.Intn(len(g.LEDs))].G = 50
 					}
 					pickLED = false
 				}
@@ -52,7 +53,7 @@ func NewRandomSinglePixel() (Animation, error) {
 				resp <- g
 			case <-color:
 				pickLED = true
-				color = time.After(time.Duration(rand.Intn(50)) * time.Millisecond)
+				color = time.After(time.Duration(rand.Intn(delay)) * time.Millisecond)
 			}
 		}
 	}(ba.RequestChan(), ba.ResponseChan())
@@ -78,7 +79,7 @@ func NewRandomFill() (Animation, error) {
 				on = !on
 			} else {
 				if on {
-					g.LEDs[ids[idx]].R = 250
+					g.LEDs[ids[idx]].R = 25
 				} else {
 					g.LEDs[ids[idx]].R = 0
 				}
@@ -90,13 +91,26 @@ func NewRandomFill() (Animation, error) {
 	})
 }
 
+func NewAllWhite() (Animation, error) {
+
+	return NewStatelessAnimation(func(g *Grid) *Grid {
+		for i := 0; i < len(g.LEDs); i++ {
+			g.LEDs[i].R = 25
+			g.LEDs[i].G = 25
+			g.LEDs[i].B = 25
+		}
+
+		return g
+	})
+}
+
 func NewRandomAllColorsFast() (Animation, error) {
 
 	return NewStatelessAnimation(func(g *Grid) *Grid {
 		for i := 0; i < len(g.LEDs)/3; i++ {
-			g.LEDs[rand.Intn(len(g.LEDs))].R = int32(rand.Intn(250))
-			g.LEDs[rand.Intn(len(g.LEDs))].G = int32(rand.Intn(250))
-			g.LEDs[rand.Intn(len(g.LEDs))].B = int32(rand.Intn(250))
+			g.LEDs[rand.Intn(len(g.LEDs))].R = int32(rand.Intn(25))
+			g.LEDs[rand.Intn(len(g.LEDs))].G = int32(rand.Intn(25))
+			g.LEDs[rand.Intn(len(g.LEDs))].B = int32(rand.Intn(25))
 		}
 
 		return g
@@ -110,11 +124,11 @@ func NewHorizontalStripes() (Animation, error) {
 			for j := range g.LEDs2D[i] {
 				switch j % 3 {
 				case 0:
-					g.LEDs2D[i][j].R = 250
+					g.LEDs2D[i][j].R = 25
 				case 1:
-					g.LEDs2D[i][j].G = 250
+					g.LEDs2D[i][j].G = 25
 				case 2:
-					g.LEDs2D[i][j].B = 250
+					g.LEDs2D[i][j].B = 25
 				}
 			}
 		}
@@ -145,11 +159,11 @@ func NewStrandTest() (Animation, error) {
 			} else {
 				switch color {
 				case 0:
-					g.LEDs[idx].R = 250
+					g.LEDs[idx].R = 25
 				case 1:
-					g.LEDs[idx].G = 250
+					g.LEDs[idx].G = 25
 				case 2:
-					g.LEDs[idx].B = 250
+					g.LEDs[idx].B = 25
 				}
 				idx++
 			}
@@ -163,7 +177,7 @@ func NewPulseAll() (Animation, error) {
 	return NewStatefulAnimation(func(req, resp chan *Grid) {
 		steps := 20
 		current := 1
-		max := 240
+		max := 25
 		up := true
 
 		for {
@@ -228,8 +242,8 @@ func NewTheaterCrawl() (Animation, error) {
 		for {
 			g := <-req
 			skips++
-			if skips == 2 {
-				rep := &repeater{start, max, 250, true}
+			if skips == 3 {
+				rep := &repeater{start, max, 100, true}
 
 				// go around the edge
 
