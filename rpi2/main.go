@@ -7,6 +7,7 @@ import (
 	"log"
 	"math/rand"
 	"os"
+	"time"
 
 	"github.com/justone/pulse_box/anim"
 	"github.com/justone/pulse_box/common/queue"
@@ -26,6 +27,9 @@ func run() error {
 	width := flag.Int("width", 10, "width of the LED grid")
 	logFile := flag.String("logfile", "pulse_box.log", "filename to log messages to")
 
+	rand.Seed(time.Now().Unix())
+	flag.Parse()
+
 	f, err := os.OpenFile(*logFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0644)
 	if err != nil {
 		return err
@@ -34,8 +38,8 @@ func run() error {
 
 	log.SetOutput(f)
 
-	driver, err := anim.NewScreenDriver(*height, *width)
-	// driver, err := anim.NewBoxDriver(*height, *width, os.Getenv("SERIAL_PORT"))
+	// driver, err := anim.NewScreenDriver(*height, *width)
+	driver, err := anim.NewBoxDriver(*height, *width, os.Getenv("SERIAL_PORT"))
 
 	if err != nil {
 		return err
@@ -73,15 +77,15 @@ func createAnimation(queue *queue.SQSQueue) (anim.Animation, error) {
 				for _, l := range g.LEDs {
 					if l.R > 0 {
 						// log.Printf("  knocking down red on %d", i)
-						l.R = l.R - 5
+						l.R = l.R - 2
 					}
 					if l.G > 0 {
 						// log.Printf("  knocking down green on %d", i)
-						l.G = l.G - 5
+						l.G = l.G - 2
 					}
 					if l.B > 0 {
 						// log.Printf("  knocking down blue on %d", i)
-						l.B = l.B - 5
+						l.B = l.B - 2
 					}
 				}
 				if len(colorsToLight) > 0 {
@@ -90,28 +94,28 @@ func createAnimation(queue *queue.SQSQueue) (anim.Animation, error) {
 						l := g.LEDs[rand.Intn(len(g.LEDs))]
 						switch color {
 						case "red":
-							l.R = 200
+							l.R = 50
 							l.G = 0
 							l.B = 0
 						case "green":
 							l.R = 0
-							l.G = 200
+							l.G = 50
 							l.B = 0
 						case "blue":
 							l.R = 0
 							l.G = 0
-							l.B = 200
+							l.B = 50
 						case "cyan":
 							l.R = 0
-							l.G = 200
-							l.B = 200
+							l.G = 50
+							l.B = 50
 						case "magenta":
-							l.R = 200
+							l.R = 50
 							l.G = 0
-							l.B = 200
+							l.B = 50
 						case "yellow":
-							l.R = 200
-							l.G = 200
+							l.R = 50
+							l.G = 50
 							l.B = 0
 						}
 					}
